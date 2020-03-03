@@ -1,5 +1,4 @@
 import timeit
-import sys
 class Dinglemouse:
     def __init__(self, queues:tuple, capacity:int):
         self.queues = dict(zip(range(len(queues)), queues))
@@ -11,25 +10,19 @@ class Dinglemouse:
         self.topFloor = len(queues)-1
         self.botFloor = 0
     
-    #update the left ppl in the floor after people got in the lift
-    def eliminate(self, people:list, floor:int):
+    def eliminate(self, people:list, floor:int): #update the left ppl in the floor after people got in the lift
         new_queue = list(self.queues[floor])
-        #for floor in [pf for pf in  self.lift if pf in range(len(queues))]:
         for p in people:
             new_queue.remove(p)
-        #update the floor with the new value
-        self.queues.update({floor:tuple(new_queue)})
+        self.queues.update({floor:tuple(new_queue)}) #update the floor with the new value
 
-    #check if the person in the queues wanna go to the direction that lift is currently heading
-    def check_floor(self,people):
+    def check_floor(self,people): #check if the person in the queues wanna go to the direction that lift is currently heading
         return True if (people < self.currentFloor and self.direction == 0 or people > self.currentFloor and self.direction == 1) else False
             
-    #change lift direction
-    def change_direction(self):
+    def change_direction(self): #change lift direction
         self.direction = 1 - self.direction
 
-    #add people to the lift and remove the people in the queues
-    def fill_lift(self, floor):
+    def fill_lift(self, floor): #add people to the lift and remove the people in the queues
         got_in = []
         for p in self.queues[floor]:
             if len(self.lift) < self.capacity and self.check_floor(p):
@@ -37,41 +30,22 @@ class Dinglemouse:
                 got_in.append(p)
         self.eliminate(got_in, floor)
 
-    #getitng people out from the lift
-    def checkout_ppl(self, floor):
-        new_lift = []
-        test = []
-        for i, ppl in enumerate(self.lift):
-            if ppl != floor:
-                new_lift.append(ppl)
-            else:
-                test.append(ppl)
-        self.lift = new_lift
+    def checkout_ppl(self, floor): #getitng people out from the lift
+        self.lift = [ppl for ppl in self.lift if ppl != floor]
 
-    #move lift up by one floor
-    def move_up(self, floor,lift):
+    def move_up(self, floor,lift): #move lift up by one floor
         for fl in range(floor+1,self.topFloor+1):
             if (len(self.queues[fl]) != 0 and max(self.queues[fl]) >fl) or (fl in lift):
                 if floor != fl:
                     self.currentFloor = fl
                 break
 
-        if self.currentFloor == floor:
-            self.change_direction()
-            self.move_down(self.topFloor+1,lift)
-
-
-    #move lift down by one floor
-    def move_down(self, floor, lift):
+    def move_down(self, floor, lift): #move lift down by one floor
         for fl in range(floor-1,self.botFloor-1,-1):
             if (len(self.queues[fl]) != 0 and min(self.queues[fl])<fl) or fl in lift:
                 if fl != floor:
                     self.currentFloor = fl
                 break
-        
-        if self.currentFloor == floor:
-            self.change_direction()
-            self.move_up(self.botFloor-1,lift)
 
     def all_floors_are_empty(self):
         return all([True if len(ppl) == 0 else False for floor,ppl in self.queues.items()])
@@ -82,12 +56,14 @@ class Dinglemouse:
     def theLift(self):
         all_not_empty = True
         while all_not_empty:
-            
             working_floor = self.currentFloor
             if self.direction == 1: #and self.currentFloor <= self.topFloor:
                 self.fill_lift(self.currentFloor) #making people get in the lift
                 if self.currentFloor < self.topFloor:   #moving lift up
                     self.move_up(self.currentFloor,self.lift)
+                    if working_floor == self.currentFloor:
+                        self.change_direction()
+                        self.move_down(self.topFloor+1,self.lift)
                     self.checkout_ppl(self.currentFloor) #get people of the lift when reached their destination
                 else:
                     self.change_direction()
@@ -96,6 +72,9 @@ class Dinglemouse:
                 self.fill_lift(self.currentFloor)
                 if self.currentFloor > self.botFloor:
                     self.move_down(self.currentFloor,self.lift)
+                    if self.currentFloor == working_floor:
+                        self.change_direction()
+                        self.move_up(self.botFloor-1,self.lift)
                     self.checkout_ppl(self.currentFloor)
                 else:
                     self.change_direction()
@@ -103,14 +82,12 @@ class Dinglemouse:
             if working_floor != self.currentFloor:
                 self.stops.append(self.currentFloor)
 
-            #returns to the ground floor when there is no queue of ppl
-            if self.all_floors_are_empty() and len(self.lift)==0:
+            if self.all_floors_are_empty() and len(self.lift)==0: #returns to the ground floor when there is no queue of ppl
                 all_not_empty = False
                 if self.stops[-1] != 0:
                     self.currentFloor = self.botFloor
                     self.stops.append(self.currentFloor)
         return self.stops
-
 
 if __name__ == "__main__":
     test = Dinglemouse(((3, 3, 3, 3, 3, 3), (), (), (), (), (), ()),5)
